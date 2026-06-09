@@ -1,93 +1,177 @@
-# Atheleteiq
+# ⚡ AthleteIQ — Sponsor Match Engine
 
+> AI-powered sponsor matching for sports marketing agencies.  
+> Input an athlete's stats + audience demographics → get ranked brand sponsor recommendations with reasoning, match scores, and pitch angles — in under 5 minutes.
 
+---
 
-## Getting started
+## 🚀 What It Does
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Sports marketing agencies spend hours manually matching athletes to sponsors — a slow, gut-feel process that misses high-value deals. AthleteIQ solves this.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+You input:
+- Athlete profile (sport, stats, career stage, social reach)
+- Audience demographics (age, gender, geography, interests, engagement rate)
 
-## Add your files
+Claude AI returns:
+- **6 ranked sponsor recommendations** — with match scores (0–100), reasoning, audience overlap analysis, and a ready-to-use pitch angle per brand
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React + TypeScript + Tailwind CSS |
+| Backend | Next.js API Routes (Node.js) |
+| AI Engine | Anthropic Claude API (`claude-sonnet-4-20250514`) |
+| Storage | Browser `localStorage` (athlete profiles) |
+| Deployment | Vercel |
+
+---
+
+## 📦 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- An [Anthropic API key](https://console.anthropic.com)
+
+### Installation
+
+```bash
+# 1. Clone the repo
+git clone https://code.swecha.org/Rohith-123/atheleteiq.git
+cd atheleteiq
+
+# 2. Install dependencies
+npm install
+
+# 3. Set up environment variables
+cp .env.example .env.local
+# Add your key: ANTHROPIC_API_KEY=your_key_here
+
+# 4. Run the dev server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## ⚙️ Environment Variables
+
+Create a `.env.local` file in the project root:
+
+```env
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+RATE_LIMIT_RPM=10   # optional, default: 10 requests/min per IP
+```
+
+> ⚠️ Never commit your API key. `.env.local` is already in `.gitignore`.
+
+---
+
+## 🧠 How the AI Matching Works
+
+1. The form collects athlete stats + audience data
+2. `promptBuilder.ts` constructs a structured prompt
+3. `POST /api/match` sends it to Claude with a sports strategist system prompt
+4. Claude returns a JSON array of `SponsorRecommendation` objects
+5. The UI renders ranked sponsor cards with scores and pitch text
+
+See [`05_PromptGuide.docx`](./docs/05_PromptGuide.docx) in `/docs` for the full prompt architecture.
+
+---
+
+## 📁 Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://code.swecha.org/Rohith-123/atheleteiq.git
-git branch -M main
-git push -uf origin main
+athleteiq/
+├── src/
+│   ├── components/
+│   │   ├── AthleteForm.tsx       # Sport + stats input
+│   │   ├── AudienceForm.tsx      # Demographics input
+│   │   ├── ResultsPanel.tsx      # Sponsor card list
+│   │   ├── SponsorCard.tsx       # Individual recommendation card
+│   │   └── ExportButton.tsx      # PDF download
+│   ├── app/api/match/
+│   │   └── route.ts              # Claude API route
+│   ├── types/
+│   │   └── index.ts              # TypeScript interfaces
+│   └── utils/
+│       ├── promptBuilder.ts      # Builds Claude prompt from form data
+│       └── parseResponse.ts      # Parses + validates AI JSON output
+├── docs/                         # Full spec kit (PRD, TechSpec, Sprint Plan...)
+├── .env.local                    # API keys (not committed)
+└── package.json
 ```
 
-## Integrate with your tools
+---
 
-- [ ] [Set up project integrations](https://code.swecha.org/Rohith-123/atheleteiq/-/settings/integrations)
+## 🗂️ Spec Kit (`/docs`)
 
-## Collaborate with your team
+Full project documentation is in the `/docs` folder:
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+| File | Description |
+|---|---|
+| `01_PRD.docx` | Product Requirements — features, KPIs, scope |
+| `02_TechSpec.docx` | Architecture, data models, API spec |
+| `03_SprintPlan.docx` | 2-day sprint — hour-by-hour task breakdown |
+| `04_UserStories.docx` | User stories + acceptance criteria |
+| `05_PromptGuide.docx` | Claude prompt engineering guide + parsing code |
+| `06_README.docx` | Project overview (Word format) |
 
-## Test and Deploy
+---
 
-Use the built-in continuous integration in GitLab.
+## 🚢 Deployment
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+```bash
+# Deploy to Vercel (recommended)
+npx vercel
 
-***
+# Set environment variables in Vercel dashboard:
+# ANTHROPIC_API_KEY → your key
+```
 
-# Editing this README
+Or connect your GitLab repo directly to Vercel for auto-deploy on push to `main`.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+---
 
-## Suggestions for a good README
+## 🗺️ Roadmap
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+- [x] Athlete profile + audience input form
+- [x] AI sponsor matching via Claude API
+- [x] Ranked results with match scores + pitch angles
+- [x] Copy-to-clipboard pitch text per sponsor
+- [x] Save/load athlete profiles (localStorage)
+- [x] PDF export of recommendations
+- [ ] CRM integration (Salesforce / HubSpot)
+- [ ] Brand intake portal (brands register fit criteria)
+- [ ] Historical deal benchmarking database
+- [ ] Multi-user team collaboration
+- [ ] Automated outreach email drafting
 
-## Name
-Choose a self-explaining name for your project.
+---
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## 🤝 Contributing
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Pull requests are welcome. For major changes, open an issue first to discuss what you'd like to change.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+1. Fork the repo
+2. Create your branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m 'Add your feature'`
+4. Push to the branch: `git push origin feature/your-feature`
+5. Open a merge request
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+---
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## 👤 Author
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+**Rohith** — [@Rohith-123](https://code.swecha.org/Rohith-123)
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+---
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## 📄 License
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This project is licensed under the MIT License.
