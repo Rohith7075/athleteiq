@@ -120,8 +120,6 @@ Full project documentation is in the `/docs` folder:
 | `03_SprintPlan.docx` | 2-day sprint — hour-by-hour task breakdown |
 | `04_UserStories.docx` | User stories + acceptance criteria |
 | `05_PromptGuide.docx` | Claude prompt engineering guide + parsing code |
-| `06_README.docx` | Project overview (Word format) |
-
 ---
 
 ## 🚢 Deployment
