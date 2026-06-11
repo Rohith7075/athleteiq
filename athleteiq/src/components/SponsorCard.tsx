@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────
 //  AthleteIQ — SponsorCard Component
-//  Renders a single sponsor recommendation
+//  Renders a single sponsor recommendation (i18n enabled)
 // ─────────────────────────────────────────────
 
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from '../i18n/useTranslation';
 import { SponsorRecommendation } from '../types';
 import { scoreToColor, scoreLabel, dealTypeColor } from '../utils/parseResponse';
 
@@ -14,6 +15,7 @@ interface SponsorCardProps {
 }
 
 export default function SponsorCard({ rec }: SponsorCardProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -24,7 +26,6 @@ export default function SponsorCard({ rec }: SponsorCardProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const ta = document.createElement('textarea');
       ta.value = text;
       document.body.appendChild(ta);
@@ -39,12 +40,17 @@ export default function SponsorCard({ rec }: SponsorCardProps) {
   const scoreStyle = scoreToColor(rec.matchScore);
   const dealStyle = dealTypeColor(rec.dealType);
 
+  function getScoreLabel(score: number): string {
+    if (score >= 80) return t('results.excellent');
+    if (score >= 60) return t('results.good');
+    return t('results.possible');
+  }
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
       {/* Header Row */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
-          {/* Rank badge */}
           <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
             {rec.rank}
           </div>
@@ -54,10 +60,9 @@ export default function SponsorCard({ rec }: SponsorCardProps) {
           </div>
         </div>
 
-        {/* Match Score */}
         <div className={`flex flex-col items-center px-3 py-1 rounded-lg border ${scoreStyle} flex-shrink-0`}>
           <span className="text-xl font-black leading-none">{rec.matchScore}</span>
-          <span className="text-[10px] font-medium leading-tight">{scoreLabel(rec.matchScore)}</span>
+          <span className="text-[10px] font-medium leading-tight">{getScoreLabel(rec.matchScore)}</span>
         </div>
       </div>
 
@@ -70,7 +75,7 @@ export default function SponsorCard({ rec }: SponsorCardProps) {
 
       {/* Pitch Angle (always visible) */}
       <div className="bg-blue-50 rounded-lg px-3 py-2 mb-3">
-        <p className="text-xs font-semibold text-blue-800 mb-0.5">Pitch Angle</p>
+        <p className="text-xs font-semibold text-blue-800 mb-0.5">{t('results.pitchAngle')}</p>
         <p className="text-sm text-blue-900">{rec.pitchAngle}</p>
       </div>
 
@@ -80,17 +85,17 @@ export default function SponsorCard({ rec }: SponsorCardProps) {
         onClick={() => setExpanded(v => !v)}
         className="text-xs text-blue-600 hover:text-blue-800 font-medium mb-2 flex items-center gap-1"
       >
-        {expanded ? '▲ Hide details' : '▼ See reasoning & audience fit'}
+        {expanded ? t('results.hideDetails') : t('results.showDetails')}
       </button>
 
       {expanded && (
         <div className="space-y-3 pt-1 border-t border-gray-100">
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Reasoning</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('results.reasoning')}</p>
             <p className="text-sm text-gray-700">{rec.reasoning}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Audience Overlap</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('results.audienceOverlap')}</p>
             <p className="text-sm text-gray-700">{rec.audienceOverlap}</p>
           </div>
         </div>
@@ -106,7 +111,7 @@ export default function SponsorCard({ rec }: SponsorCardProps) {
             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
         }`}
       >
-        {copied ? '✅ Copied to clipboard!' : '📋 Copy pitch text'}
+        {copied ? t('results.copied') : t('results.copyPitch')}
       </button>
     </div>
   );

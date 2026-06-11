@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────
 //  AthleteIQ — AthleteForm Component
-//  Step 1: Collect athlete profile
+//  Step 1: Collect athlete profile (i18n enabled)
 // ─────────────────────────────────────────────
 
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from '../i18n/useTranslation';
 import { AthleteProfile, SportType, CareerStage, SocialPlatform } from '../types';
 import { getStatsForSport } from '../utils/promptBuilder';
 
@@ -43,6 +44,7 @@ const PLATFORMS: { value: SocialPlatform; label: string }[] = [
 ];
 
 export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(defaultValues?.name ?? '');
   const [sport, setSport] = useState<SportType>(defaultValues?.sport ?? 'football');
   const [careerStage, setCareerStage] = useState<CareerStage>(defaultValues?.careerStage ?? 'established');
@@ -84,7 +86,6 @@ export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProp
       ),
     };
 
-    // Save to localStorage for "Load saved profile" feature
     try {
       localStorage.setItem('athleteiq_last_profile', JSON.stringify(profile));
     } catch {}
@@ -95,18 +96,18 @@ export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProp
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-800 mb-1">Athlete Profile</h2>
-        <p className="text-sm text-gray-500">Step 1 of 2 — Enter the athlete's details</p>
+        <h2 className="text-xl font-bold text-gray-800 mb-1">{t('form.athleteTitle')}</h2>
+        <p className="text-sm text-gray-500">{t('form.athleteSubtitle')}</p>
       </div>
 
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Athlete Name</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.nameLabel')}</label>
         <input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder="e.g. Priya Sharma"
+          placeholder={t('form.namePlaceholder')}
           required
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -114,7 +115,7 @@ export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProp
 
       {/* Sport */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Sport</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">{t('form.sportLabel')}</label>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {SPORTS.map(s => (
             <button
@@ -133,9 +134,9 @@ export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProp
         </div>
       </div>
 
-      {/* Performance Stats — dynamic per sport */}
+      {/* Performance Stats */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Performance Stats</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">{t('form.statsLabel')}</label>
         <div className="grid grid-cols-2 gap-3">
           {statLabels.map(label => (
             <div key={label}>
@@ -154,7 +155,7 @@ export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProp
 
       {/* Career Stage */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Career Stage</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">{t('form.careerStageLabel')}</label>
         <div className="grid grid-cols-3 gap-2">
           {CAREER_STAGES.map(cs => (
             <button
@@ -179,7 +180,7 @@ export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProp
       {/* Social + Followers */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Primary Platform</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.platformLabel')}</label>
           <select
             value={platform}
             onChange={e => setPlatform(e.target.value as SocialPlatform)}
@@ -191,12 +192,12 @@ export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProp
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Followers</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.followersLabel')}</label>
           <input
             type="text"
             value={followers}
             onChange={e => setFollowers(e.target.value)}
-            placeholder="e.g. 850000"
+            placeholder={t('form.followersPlaceholder')}
             required
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -205,12 +206,12 @@ export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProp
 
       {/* Geography */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Geographic Base</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.geoLabel')}</label>
         <input
           type="text"
           value={geoBase}
           onChange={e => setGeoBase(e.target.value)}
-          placeholder="e.g. India, United States, Brazil"
+          placeholder={t('form.geoPlaceholder')}
           required
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -220,7 +221,7 @@ export default function AthleteForm({ onSubmit, defaultValues }: AthleteFormProp
         type="submit"
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
       >
-        Next: Audience Demographics →
+        {t('form.nextBtn')}
       </button>
     </form>
   );

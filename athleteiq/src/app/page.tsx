@@ -1,5 +1,6 @@
 // ─────────────────────────────────────────────
 //  AthleteIQ — Main Page (App Entry Point)
+//  With i18n + multi-AI provider support
 // ─────────────────────────────────────────────
 
 'use client';
@@ -8,24 +9,32 @@ import { useState, useEffect } from 'react';
 import AthleteForm from '../components/AthleteForm';
 import AudienceForm from '../components/AudienceForm';
 import ResultsPanel, { ResultsSkeleton } from '../components/ResultsPanel';
+import SettingsModal, { getAiConfig, AiConfig } from '../components/SettingsModal';
+import { useTranslation } from '../i18n/useTranslation';
 import { AthleteProfile, AudienceProfile, SponsorRecommendation, AppStep } from '../types';
 
+const LOCALE_LABELS: Record<string, string> = {
+  en: 'EN',
+  hi: 'हि',
+  te: 'తె',
+};
+
 export default function Home() {
+  const { t, locale, setLocale } = useTranslation();
   const [step, setStep] = useState<AppStep>('athlete');
   const [athlete, setAthlete] = useState<AthleteProfile | null>(null);
   const [results, setResults] = useState<SponsorRecommendation[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedProfile, setSavedProfile] = useState<AthleteProfile | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // Load saved profile from localStorage (client-side only to avoid hydration error)
+  // Load saved profile from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem('athleteiq_last_profile');
       if (saved) setSavedProfile(JSON.parse(saved));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, []);
 
   async function handleAudienceSubmit(audience: AudienceProfile) {
@@ -34,22 +43,25 @@ export default function Home() {
     setError(null);
 
     try {
+      // Get AI config from localStorage (BYOK + provider selection)
+      const aiConfig = getAiConfig();
+
       const res = await fetch('/api/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ athlete, audience }),
+        body: JSON.stringify({ athlete, audience, aiConfig }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error ?? 'Something went wrong. Please try again.');
+        throw new Error(data.error ?? t('errors.generic'));
       }
 
       setResults(data.recommendations);
       setStep('results');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unexpected error. Please try again.');
+      setError(err instanceof Error ? err.message : t('errors.generic'));
     } finally {
       setLoading(false);
     }
@@ -68,14 +80,36 @@ export default function Home() {
       <nav className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-2xl">⚡</span>
-          <span className="font-black text-blue-700 text-lg tracking-tight">AthleteIQ</span>
-          <span className="hidden sm:inline text-xs text-gray-400 ml-1">Sponsor Match Engine</span>
+          <span className="font-black text-blue-700 text-lg tracking-tight">{t('app.header')}</span>
+          <span className="hidden sm:inline text-xs text-gray-400 ml-1">{t('app.tagline')}</span>
         </div>
-        {step !== 'athlete' && (
-          <button onClick={reset} className="text-xs text-gray-400 hover:text-blue-600 underline">
-            Start over
+        <div className="flex items-center gap-2">
+          {/* Language quick-switch */}
+          <select
+            value={locale}
+            onChange={e => setLocale(e.target.value as any)}
+            className="text-xs border border-gray-200 rounded-md px-2 py-1 text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          >
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+            <option value="te">తెలుగు</option>
+          </select>
+
+          {/* Settings */}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="text-xs text-gray-400 hover:text-blue-600 underline"
+            title={t('settings.title')}
+          >
+            ⚙️ {t('nav.settings')}
           </button>
-        )}
+
+          {step !== 'athlete' && (
+            <button onClick={reset} className="text-xs text-gray-400 hover:text-blue-600 underline">
+              {t('nav.startOver')}
+            </button>
+          )}
+        </div>
       </nav>
 
       {/* Step Progress */}
@@ -89,7 +123,7 @@ export default function Home() {
                   {i + 1}
                 </div>
                 <span className={`text-xs font-medium ${step === s ? 'text-blue-700' : 'text-gray-400'}`}>
-                  {s === 'athlete' ? 'Athlete Profile' : 'Audience Demographics'}
+                  {s === 'athlete' ? t('steps.athlete') : t('steps.audience')}
                 </span>
                 {i < 1 && <div className="flex-1 h-px bg-gray-200" />}
               </div>
@@ -129,6 +163,9 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </main>
   );
 }

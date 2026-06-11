@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────
 //  AthleteIQ — AudienceForm Component
-//  Step 2: Collect audience demographics
+//  Step 2: Collect audience demographics (i18n enabled)
 // ─────────────────────────────────────────────
 
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from '../i18n/useTranslation';
 import { AudienceProfile, InterestTag } from '../types';
 
 interface AudienceFormProps {
@@ -32,6 +33,7 @@ const INTEREST_TAGS: { value: InterestTag; label: string; emoji: string }[] = [
 const AGE_RANGES = ['13-17', '18-24', '25-34', '35-44', '45+'] as const;
 
 export default function AudienceForm({ onSubmit, onBack, loading }: AudienceFormProps) {
+  const { t } = useTranslation();
   const [ages, setAges] = useState<Record<string, number>>({
     '13-17': 5, '18-24': 35, '25-34': 35, '35-44': 18, '45+': 7,
   });
@@ -78,16 +80,16 @@ export default function AudienceForm({ onSubmit, onBack, loading }: AudienceForm
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-800 mb-1">Audience Demographics</h2>
-        <p className="text-sm text-gray-500">Step 2 of 2 — Describe the athlete's audience</p>
+        <h2 className="text-xl font-bold text-gray-800 mb-1">{t('form.audienceTitle')}</h2>
+        <p className="text-sm text-gray-500">{t('form.audienceSubtitle')}</p>
       </div>
 
       {/* Age Distribution */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-gray-700">Age Distribution</label>
+          <label className="text-sm font-medium text-gray-700">{t('form.ageLabel')}</label>
           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ageTotal === 100 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-            Total: {ageTotal}%
+            {t('form.total')}: {ageTotal}%
           </span>
         </div>
         <div className="space-y-2">
@@ -111,9 +113,9 @@ export default function AudienceForm({ onSubmit, onBack, loading }: AudienceForm
       {/* Gender Split */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-gray-700">Gender Split</label>
+          <label className="text-sm font-medium text-gray-700">{t('form.genderLabel')}</label>
           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${genderTotal === 100 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-            Total: {genderTotal}%
+            {t('form.total')}: {genderTotal}%
           </span>
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -138,26 +140,37 @@ export default function AudienceForm({ onSubmit, onBack, loading }: AudienceForm
 
       {/* Top Geographies */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Top Audience Geographies (up to 3)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">{t('form.geographyLabel')}</label>
         <div className="space-y-2">
-          {geos.map((g, i) => (
-            <input
-              key={i}
-              type="text"
-              value={g}
-              onChange={e => handleGeoChange(i, e.target.value)}
-              placeholder={`Geography ${i + 1} — e.g. India`}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-          ))}
+          <input
+            type="text"
+            value={geos[0]}
+            onChange={e => handleGeoChange(0, e.target.value)}
+            placeholder={t('form.geoPlaceholder1')}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <input
+            type="text"
+            value={geos[1]}
+            onChange={e => handleGeoChange(1, e.target.value)}
+            placeholder={t('form.geoPlaceholder2')}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <input
+            type="text"
+            value={geos[2]}
+            onChange={e => handleGeoChange(2, e.target.value)}
+            placeholder={t('form.geoPlaceholder3')}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
         </div>
       </div>
 
       {/* Interest Tags */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Audience Interests
-          <span className="ml-2 text-xs text-gray-400 font-normal">Select all that apply</span>
+          {t('form.interestsLabel')}
+          <span className="ml-2 text-xs text-gray-400 font-normal">{t('form.interestsHint')}</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {INTEREST_TAGS.map(tag => (
@@ -179,9 +192,7 @@ export default function AudienceForm({ onSubmit, onBack, loading }: AudienceForm
 
       {/* Engagement Rate */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Engagement Rate (%)
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.engagementLabel')}</label>
         <input
           type="number"
           step="0.1"
@@ -193,7 +204,7 @@ export default function AudienceForm({ onSubmit, onBack, loading }: AudienceForm
           required
           className="w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <p className="text-xs text-gray-400 mt-1">Average likes + comments ÷ followers × 100</p>
+        <p className="text-xs text-gray-400 mt-1">{t('form.engagementHint')}</p>
       </div>
 
       <div className="flex gap-3">
@@ -202,7 +213,7 @@ export default function AudienceForm({ onSubmit, onBack, loading }: AudienceForm
           onClick={onBack}
           className="flex-1 border border-gray-300 text-gray-600 font-medium py-3 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          ← Back
+          {t('form.backBtn')}
         </button>
         <button
           type="submit"
@@ -215,10 +226,10 @@ export default function AudienceForm({ onSubmit, onBack, loading }: AudienceForm
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              Finding Sponsors…
+              {t('form.findingSponsors')}
             </>
           ) : (
-            '⚡ Find Sponsor Matches'
+            t('form.findSponsors')
           )}
         </button>
       </div>

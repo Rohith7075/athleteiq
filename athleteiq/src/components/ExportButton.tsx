@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────
 //  AthleteIQ — ExportButton Component
-//  Generates and downloads a PDF report of results
+//  Generates and downloads a PDF report of results (i18n enabled)
 // ─────────────────────────────────────────────
 
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from '../i18n/useTranslation';
 import { SponsorRecommendation, AthleteProfile } from '../types';
 
 interface ExportButtonProps {
@@ -14,13 +15,13 @@ interface ExportButtonProps {
 }
 
 export default function ExportButton({ results, athlete }: ExportButtonProps) {
+  const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
 
   async function handleExport() {
     setExporting(true);
 
     try {
-      // Dynamically import jsPDF to avoid SSR issues
       const { jsPDF } = await import('jspdf');
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
@@ -29,7 +30,7 @@ export default function ExportButton({ results, athlete }: ExportButtonProps) {
       const contentW = pageW - margin * 2;
       let y = 20;
 
-      // ── Header ────────────────────────────────
+      // Header
       doc.setFillColor(68, 114, 196);
       doc.rect(0, 0, pageW, 40, 'F');
 
@@ -47,7 +48,7 @@ export default function ExportButton({ results, athlete }: ExportButtonProps) {
 
       y = 52;
 
-      // ── Athlete Summary ───────────────────────
+      // Athlete Summary
       doc.setTextColor(30, 30, 30);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
@@ -62,12 +63,12 @@ export default function ExportButton({ results, athlete }: ExportButtonProps) {
       doc.text(`Platform: ${athlete.primaryPlatform}   |   Followers: ${athlete.followerCount.toLocaleString()}`, margin, y);
       y += 10;
 
-      // ── Divider ───────────────────────────────
+      // Divider
       doc.setDrawColor(200, 200, 200);
       doc.line(margin, y, pageW - margin, y);
       y += 8;
 
-      // ── Recommendations ───────────────────────
+      // Recommendations
       doc.setTextColor(30, 30, 30);
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
@@ -75,20 +76,17 @@ export default function ExportButton({ results, athlete }: ExportButtonProps) {
       y += 10;
 
       for (const rec of results) {
-        // Page break check
         if (y > 255) {
           doc.addPage();
           y = 20;
         }
 
-        // Card background
         const cardH = 54;
         doc.setFillColor(248, 250, 255);
         doc.roundedRect(margin, y - 4, contentW, cardH, 3, 3, 'F');
         doc.setDrawColor(200, 210, 240);
         doc.roundedRect(margin, y - 4, contentW, cardH, 3, 3, 'S');
 
-        // Rank + Brand
         doc.setFillColor(68, 114, 196);
         doc.circle(margin + 5, y + 4, 4, 'F');
         doc.setTextColor(255, 255, 255);
@@ -101,13 +99,11 @@ export default function ExportButton({ results, athlete }: ExportButtonProps) {
         doc.setFont('helvetica', 'bold');
         doc.text(rec.brandName, margin + 13, y + 5);
 
-        // Category + Deal Type
         doc.setTextColor(100, 100, 130);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.text(`${rec.brandCategory}  •  ${rec.dealType}`, margin + 13, y + 11);
 
-        // Score
         const scoreColor = rec.matchScore >= 80 ? [46, 139, 87] : rec.matchScore >= 60 ? [180, 100, 20] : [120, 120, 120];
         doc.setTextColor(...(scoreColor as [number, number, number]));
         doc.setFontSize(14);
@@ -116,14 +112,12 @@ export default function ExportButton({ results, athlete }: ExportButtonProps) {
         doc.setFontSize(7);
         doc.text('MATCH', pageW - margin - 5, y + 11, { align: 'right' });
 
-        // Reasoning
         doc.setTextColor(60, 60, 60);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         const reasonLines = doc.splitTextToSize(rec.reasoning, contentW - 10);
         doc.text(reasonLines.slice(0, 2), margin + 3, y + 19);
 
-        // Pitch angle
         doc.setFont('helvetica', 'bolditalic');
         doc.setTextColor(68, 114, 196);
         doc.setFontSize(8);
@@ -133,7 +127,7 @@ export default function ExportButton({ results, athlete }: ExportButtonProps) {
         y += cardH + 5;
       }
 
-      // ── Footer ────────────────────────────────
+      // Footer
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
@@ -169,14 +163,14 @@ export default function ExportButton({ results, athlete }: ExportButtonProps) {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
           </svg>
-          Generating PDF…
+          {t('results.generatingPdf')}
         </>
       ) : (
         <>
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a2 2 0 002 2h14a2 2 0 002-2v-3" />
           </svg>
-          Download PDF Report
+          {t('results.downloadPdf')}
         </>
       )}
     </button>

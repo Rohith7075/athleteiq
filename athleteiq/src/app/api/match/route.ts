@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 //  AthleteIQ — API Route: POST /api/match
-//  Receives athlete + audience data, calls Gemini,
-//  returns ranked SponsorRecommendation[]
+//  Receives athlete + audience data + AI config,
+//  calls Gemini or Ollama, returns ranked SponsorRecommendation[]
 // ─────────────────────────────────────────────
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,8 +10,7 @@ import { buildPrompt, SYSTEM_PROMPT } from '../../../utils/promptBuilder';
 import { parseSponsorResponse } from '../../../utils/parseResponse';
 import { MatchRequest, MatchResponse } from '../../../types';
 
-const apiKey = process.env.GEMINI_API_KEY || '';
-const genAI = new GoogleGenerativeAI(apiKey);
+const FALLBACK_API_KEY = process.env.GEMINI_API_KEY || '';
 
 // Models to try in order (different models often have separate quota)
 const GEMINI_MODELS = [
@@ -55,17 +54,16 @@ function validateRequest(body: unknown): body is MatchRequest {
 }
 
 // ── Call Gemini with retry and model fallback ─────
-async function callGeminiWithRetry(userPrompt: string): Promise<{ text: string; model: string }> {
+async function callGeminiWithRetry(userPrompt: string, apiKey: string): Promise<{ text: string; model: string }> {
+  const genAI = new GoogleGenerativeAI(apiKey);
   let lastError: string = '';
 
-  // Try each model in order
   for (const modelName of GEMINI_MODELS) {
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: SYSTEM_PROMPT,
     });
 
-    // Retry up to 2 times per model (to handle temporary 429)
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const result = await model.generateContent(userPrompt);
@@ -76,28 +74,51 @@ async function callGeminiWithRetry(userPrompt: string): Promise<{ text: string; 
         const errorMessage = err instanceof Error ? err.message : String(err);
         lastError = errorMessage;
 
-        // If it's a rate limit error, wait and retry
         if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('Too Many Requests')) {
-          const delay = 1000 * (attempt + 1); // 1s, 2s, 3s
+          const delay = 1000 * (attempt + 1);
           console.log(`Rate limited on ${modelName}, retrying in ${delay}ms (attempt ${attempt + 1})`);
           await sleep(delay);
           continue;
         }
 
-        // If it's a model not found error, try next model immediately
         if (errorMessage.includes('not found') || errorMessage.includes('404')) {
           console.log(`Model ${modelName} not available, trying next model`);
           break;
         }
 
-        // For other errors, throw immediately
         throw err;
       }
     }
   }
 
-  // If all models failed with rate limits, throw a helpful error
   throw new Error(lastError);
+}
+
+// ── Call Ollama (local AI inference) ──────────────
+async function callOllama(userPrompt: string, ollamaUrl: string, ollamaModel: string): Promise<string> {
+  const fullPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}`;
+
+  const res = await fetch(`${ollamaUrl}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: ollamaModel,
+      prompt: fullPrompt,
+      stream: false,
+      options: {
+        temperature: 0.7,
+        top_p: 0.9,
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Ollama error (${res.status}): ${errorText}`);
+  }
+
+  const data = await res.json();
+  return data.response || '';
 }
 
 // ── Route Handler ─────────────────────────────────
@@ -111,17 +132,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Check API key is set
-  if (!apiKey) {
-    console.error('GEMINI_API_KEY is not set in environment variables');
-    return NextResponse.json(
-      { error: 'API key not configured. Please set GEMINI_API_KEY in .env.local file.' },
-      { status: 500 }
-    );
-  }
-
   // Parse body
-  let body: unknown;
+  let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
@@ -135,33 +147,60 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { athlete, audience } = body;
+  const { athlete, audience, aiConfig } = body as any;
+  const provider = aiConfig?.provider || 'gemini';
 
   // Build prompt
   const userPrompt = buildPrompt(athlete, audience);
 
-  // Call Gemini with retry + model fallback
+  // Call AI
   let aiText: string;
   let tokenUsage = 0;
 
   try {
-    const result = await callGeminiWithRetry(userPrompt);
-    aiText = result.text;
+    if (provider === 'ollama') {
+      // ── Ollama (local inference) ─────────────────
+      const ollamaUrl = aiConfig?.ollamaUrl || 'http://localhost:11434';
+      const ollamaModel = aiConfig?.ollamaModel || 'llama3.2';
 
-    // Estimate token usage based on character count
-    tokenUsage = Math.ceil((userPrompt.length + aiText.length) / 4);
+      try {
+        aiText = await callOllama(userPrompt, ollamaUrl, ollamaModel);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (errorMessage.includes('ECONNREFUSED') || errorMessage.includes('Failed to fetch')) {
+          return NextResponse.json(
+            { error: '⚠️ Ollama is not running. Please start Ollama and try again.' },
+            { status: 503 }
+          );
+        }
+        throw err;
+      }
+
+      tokenUsage = Math.ceil((userPrompt.length + aiText.length) / 4);
+    } else {
+      // ── Google Gemini ────────────────────────────
+      // BYOK: use the user-provided key, or fall back to server key
+      const apiKey = aiConfig?.geminiApiKey?.trim() || FALLBACK_API_KEY;
+
+      if (!apiKey) {
+        return NextResponse.json(
+          { error: 'API key not configured. Please add your key in Settings or set GEMINI_API_KEY in .env.local' },
+          { status: 500 }
+        );
+      }
+
+      const result = await callGeminiWithRetry(userPrompt, apiKey);
+      aiText = result.text;
+      tokenUsage = Math.ceil((userPrompt.length + aiText.length) / 4);
+    }
   } catch (err: unknown) {
-    console.error('Gemini API error details:', err);
+    console.error('AI error details:', err);
     const errorMessage = err instanceof Error ? err.message : String(err);
 
-    // Check if it's a quota issue
     if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('exceeded')) {
       return NextResponse.json(
         {
-          error: '⚠️ Gemini API daily quota exceeded. Please do one of the following:\n' +
-                 '  1. Go to https://aistudio.google.com/apikey and enable billing (you get $300 free credits)\n' +
-                 '  2. Wait until tomorrow when the free quota resets\n' +
-                 '  3. Create a new Google account and generate a new API key',
+          error: '⚠️ API quota exceeded. Try:\n  1. Use a different API key in Settings\n  2. Switch to Ollama (local, free)\n  3. Wait for quota reset',
         },
         { status: 429 }
       );
