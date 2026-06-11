@@ -2,6 +2,7 @@
   "name": "athleteiq",
   "version": "1.0.0",
   "private": true,
+  "description": "AI-powered sponsor matching engine for sports marketing agencies. Enter athlete stats + audience demographics, get ranked brand sponsor recommendations with match scores and pitch angles.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

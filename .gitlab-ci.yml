@@ -1,0 +1,62 @@
+# ── AthleteIQ GitLab CI Pipeline ─────────────
+
+image: node:20
+
+stages:
+  - lint
+  - build
+  - test
+  - security
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - athleteiq/node_modules/
+
+variables:
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+
+before_script:
+  - cd athleteiq
+  - npm ci
+
+# ── Lint ──────────────────────────────────────
+lint:
+  stage: lint
+  script:
+    - npm run lint
+  only:
+    - main
+    - merge_requests
+
+# ── Build ─────────────────────────────────────
+build:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - athleteiq/.next/
+    expire_in: 1 week
+  only:
+    - main
+    - merge_requests
+
+# ── Security Audit ────────────────────────────
+security-audit:
+  stage: security
+  script:
+    - npm audit --audit-level=moderate
+  allow_failure: true
+  only:
+    - main
+    - merge_requests
+
+# ── Dependency Audit ──────────────────────────
+dependency-audit:
+  stage: test
+  script:
+    - npx audit-ci --moderate
+  allow_failure: true
+  only:
+    - main
