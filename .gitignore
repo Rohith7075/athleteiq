@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Dependencies
 node_modules/
 .pnp
@@ -10,12 +11,31 @@ build/
 dist/
 
 # Environment files — NEVER commit these
+=======
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# env files — NEVER commit these
+>>>>>>> 3ded5c5196e8098a6416d1e47e1d88ac95d21a37
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
+<<<<<<< HEAD
 # IDE
 .vscode/
 .idea/
@@ -39,3 +59,11 @@ coverage/
 # Logs
 *.log
 npm-debug.log*
+=======
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+>>>>>>> 3ded5c5196e8098a6416d1e47e1d88ac95d21a37
