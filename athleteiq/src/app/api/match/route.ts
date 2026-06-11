@@ -15,9 +15,9 @@ const genAI = new GoogleGenerativeAI(apiKey);
 
 // Models to try in order (different models often have separate quota)
 const GEMINI_MODELS = [
-  'gemini-1.5-flash',    // usually most available
-  'gemini-2.0-flash',    // newer model
-  'gemini-1.5-flash-8b', // smaller variant, higher free quota
+  'gemini-2.5-flash',      // confirmed working (June 2025)
+  'gemini-2.0-flash-001',  // stable fast model
+  'gemini-2.0-flash-lite', // lightweight fallback
 ];
 
 // Delay helper (waits for given ms)
