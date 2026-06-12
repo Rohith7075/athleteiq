@@ -23,30 +23,30 @@ before_script:
   - cd athleteiq
   - npm ci
 
-# ── Lint ──────────────────────────────────────
+# ── ESLint ────────────────────────────────────
 lint:
   stage: lint
   script:
-    - npm run lint
+    - npm run lint:ci
   only:
     - main
     - merge_requests
 
-# ── Format Check (Prettier) ───────────────────
+# ── Prettier Format Check ────────────────────
 format:
   stage: format
   script:
-    - npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}" || echo "Run: npx prettier --write src/ to fix"
+    - npm run format
   allow_failure: true
   only:
     - main
     - merge_requests
 
-# ── TypeScript Type Check ─────────────────────
+# ── TypeScript Type Check ────────────────────
 type_check:
   stage: type_check
   script:
-    - npx tsc --noEmit
+    - npm run type-check
   only:
     - main
     - merge_requests
@@ -64,18 +64,37 @@ build:
     - main
     - merge_requests
 
-# ── Coverage Report ──────────────────────────
-coverage:
-  stage: coverage
+# ── Unit Tests (placeholder) ─────────────────
+test:
+  stage: test
   script:
-    - echo "No test framework configured yet. Skipping coverage."
-    - echo "To enable: add a test framework (e.g., Vitest) and run npx vitest --coverage"
+    - npm run test
   allow_failure: true
   only:
     - main
     - merge_requests
 
-# ── Security Audit ────────────────────────────
+# ── Code Coverage ────────────────────────────
+coverage:
+  stage: coverage
+  script:
+    - npm run test:coverage
+  allow_failure: true
+  only:
+    - main
+    - merge_requests
+
+# ── Secret Scanning (Gitleaks) ────────────────
+secret-scanning:
+  stage: security
+  script:
+    - npx gitleaks detect --source . --no-git -v
+  allow_failure: true
+  only:
+    - main
+    - merge_requests
+
+# ── Security Audit ───────────────────────────
 security-audit:
   stage: security
   script:
@@ -84,12 +103,3 @@ security-audit:
   only:
     - main
     - merge_requests
-
-# ── Dependency Audit ──────────────────────────
-dependency-audit:
-  stage: test
-  script:
-    - npx audit-ci --moderate
-  allow_failure: true
-  only:
-    - main

@@ -7,7 +7,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:ci": "next lint --max-warnings 0",
+    "format": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:fix": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "type-check": "tsc --noEmit",
+    "test": "echo 'No test framework configured yet' && exit 0",
+    "test:coverage": "echo 'No coverage configured yet' && exit 0",
+    "knip": "knip",
+    "changelog": "git-cliff -o CHANGELOG.md",
+    "security-scan": "npx gitleaks detect --source . --no-git -v",
+    "prepare": "pip install pre-commit && pre-commit install"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
@@ -25,8 +35,16 @@
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
+    "git-cliff": "^1.4.0",
+    "knip": "^5.0.0",
     "postcss": "^8",
+    "prettier": "^3.3.0",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
+  },
+  "knip": {
+    "entry": ["src/**/*.ts", "src/**/*.tsx"],
+    "project": ["src/**/*.ts", "src/**/*.tsx"],
+    "ignoreDependencies": ["@google/generative-ai", "jspdf", "next-intl", "run"]
   }
 }
