@@ -28,10 +28,13 @@ function validateRecommendation(item: unknown): item is SponsorRecommendation {
 // ── Main parser ───────────────────────────────────
 export function parseSponsorResponse(text: string): SponsorRecommendation[] {
   // Strip markdown code fences if Claude wrapped the response
-  const cleaned = text
-    .replace(/```json\s*/gi, '')
+  let cleaned = text
+    .replace(/```(?:json)?\s*/gi, '')
     .replace(/```\s*/g, '')
     .trim();
+
+  // Fix common JSON issues like trailing commas
+  cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
 
   let parsed: unknown;
 
@@ -39,21 +42,33 @@ export function parseSponsorResponse(text: string): SponsorRecommendation[] {
     parsed = JSON.parse(cleaned);
   } catch {
     // Try to extract a JSON array from within the text as a fallback
-    const match = cleaned.match(/\[[\s\S]*\]/);
-    if (match) {
+    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
       try {
-        parsed = JSON.parse(match[0]);
+        parsed = JSON.parse(arrayMatch[0]);
       } catch {
-        throw new Error('AI response could not be parsed as JSON. Please try again.');
+        // Try fixing missing commas between objects inside the array
+        try {
+          const fixedArray = arrayMatch[0].replace(/\}\s*\{/g, '},{');
+          parsed = JSON.parse(fixedArray);
+        } catch {
+          throw new Error('AI response could not be parsed as JSON. Please try again.');
+        }
       }
     } else {
-      // Last resort: try to find a JSON object and wrap it
-      const objMatch = cleaned.match(/\{[\s\S]*"rank"[\s\S]*\}/);
+      // Last resort: extract from the first '{' to the last '}'
+      const objMatch = cleaned.match(/\{[\s\S]*\}/);
       if (objMatch) {
         try {
-          parsed = [JSON.parse(objMatch[0])];
+          // Handle case where multiple objects are returned without an array wrapper
+          const fixedObjStr = objMatch[0].replace(/\}\s*\{/g, '},{');
+          parsed = JSON.parse(`[${fixedObjStr}]`);
         } catch {
-          throw new Error('AI response did not contain valid JSON. Please try again.');
+          try {
+            parsed = [JSON.parse(objMatch[0])];
+          } catch {
+            throw new Error('AI response did not contain valid JSON. Please try again.');
+          }
         }
       } else {
         throw new Error('AI response did not contain valid JSON. Please try again.');
@@ -62,10 +77,38 @@ export function parseSponsorResponse(text: string): SponsorRecommendation[] {
   }
 
   if (!Array.isArray(parsed)) {
-    throw new Error('AI response was not a JSON array as expected.');
+    if (parsed && typeof parsed === 'object') {
+      parsed = [parsed];
+    } else {
+      throw new Error('AI response was not a JSON array as expected.');
+    }
   }
 
-  const valid = parsed.filter(validateRecommendation);
+  // Normalize common AI hallucinations (strings instead of numbers, wrong casing)
+  const normalized = parsed.map(item => {
+    if (item && typeof item === 'object') {
+      const r = item as Record<string, unknown>;
+      if (typeof r.matchScore === 'string' && !isNaN(Number(r.matchScore))) {
+        r.matchScore = Number(r.matchScore);
+      }
+      if (typeof r.rank === 'string' && !isNaN(Number(r.rank))) {
+        r.rank = Number(r.rank);
+      }
+      if (typeof r.dealType === 'string') {
+        let dt = r.dealType.toLowerCase().trim();
+        if (!VALID_DEAL_TYPES.includes(dt as DealType)) {
+          if (dt.includes('ambassador')) dt = 'ambassador';
+          else if (dt.includes('campaign')) dt = 'campaign';
+          else if (dt.includes('collab')) dt = 'product-collab';
+          else if (dt.includes('event')) dt = 'event';
+        }
+        r.dealType = dt;
+      }
+    }
+    return item;
+  });
+
+  const valid = normalized.filter(validateRecommendation);
 
   if (valid.length === 0) {
     throw new Error('AI returned no valid sponsor recommendations. Please try again.');
