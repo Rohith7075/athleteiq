@@ -4,14 +4,17 @@ image: node:20
 
 stages:
   - lint
-  - build
+  - format
+  - type_check
   - test
+  - coverage
   - security
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - athleteiq/node_modules/
+    - .npm/
 
 variables:
   npm_config_cache: "$CI_PROJECT_DIR/.npm"
@@ -29,15 +32,45 @@ lint:
     - main
     - merge_requests
 
+# ── Format Check (Prettier) ───────────────────
+format:
+  stage: format
+  script:
+    - npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}" || echo "Run: npx prettier --write src/ to fix"
+  allow_failure: true
+  only:
+    - main
+    - merge_requests
+
+# ── TypeScript Type Check ─────────────────────
+type_check:
+  stage: type_check
+  script:
+    - npx tsc --noEmit
+  only:
+    - main
+    - merge_requests
+
 # ── Build ─────────────────────────────────────
 build:
-  stage: build
+  stage: test
   script:
     - npm run build
   artifacts:
     paths:
       - athleteiq/.next/
     expire_in: 1 week
+  only:
+    - main
+    - merge_requests
+
+# ── Coverage Report ──────────────────────────
+coverage:
+  stage: coverage
+  script:
+    - echo "No test framework configured yet. Skipping coverage."
+    - echo "To enable: add a test framework (e.g., Vitest) and run npx vitest --coverage"
+  allow_failure: true
   only:
     - main
     - merge_requests
