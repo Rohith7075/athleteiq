@@ -39,22 +39,29 @@ export function buildPrompt(
   athlete: AthleteProfile,
   audience: AudienceProfile
 ): string {
-  const ageLines = Object.entries(audience.ageDistribution)
-    .map(([range, pct]) => `  ${range}: ${pct}%`)
-    .join('\n');
+  const ageDist = audience.ageDistribution || {};
+  const ageLines = Object.keys(ageDist).length > 0
+    ? Object.entries(ageDist)
+        .map(([range, pct]) => `  ${range}: ${pct}%`)
+        .join('\n')
+    : '  Not specified';
 
-  const genderLines = `  Male: ${audience.genderSplit.male}%\n  Female: ${audience.genderSplit.female}%\n  Other: ${audience.genderSplit.other}%`;
+  const gender = audience.genderSplit || { male: 0, female: 0, other: 0 };
+  const genderLines = `  Male: ${gender.male}%\n  Female: ${gender.female}%\n  Other: ${gender.other}%`;
 
   const followerFormatted =
-    athlete.followerCount >= 1_000_000
-      ? `${(athlete.followerCount / 1_000_000).toFixed(1)}M`
-      : athlete.followerCount >= 1_000
-      ? `${(athlete.followerCount / 1_000).toFixed(0)}K`
-      : `${athlete.followerCount}`;
+    (athlete.followerCount || 0) >= 1_000_000
+      ? `${((athlete.followerCount || 0) / 1_000_000).toFixed(1)}M`
+      : (athlete.followerCount || 0) >= 1_000
+      ? `${((athlete.followerCount || 0) / 1_000).toFixed(0)}K`
+      : `${athlete.followerCount || 0}`;
 
-  const statsLines = Object.entries(athlete.stats)
-    .map(([key, val]) => `  ${key}: ${val}`)
-    .join('\n');
+  const athleteStats = athlete.stats || {};
+  const statsLines = Object.keys(athleteStats).length > 0
+    ? Object.entries(athleteStats)
+        .map(([key, val]) => `  ${key}: ${val}`)
+        .join('\n')
+    : '  Not specified';
 
   return `Analyze this athlete and their audience, then recommend the 6 best-fit sponsor brands.
 

@@ -47,7 +47,17 @@ export function parseSponsorResponse(text: string): SponsorRecommendation[] {
         throw new Error('AI response could not be parsed as JSON. Please try again.');
       }
     } else {
-      throw new Error('AI response did not contain valid JSON. Please try again.');
+      // Last resort: try to find a JSON object and wrap it
+      const objMatch = cleaned.match(/\{[\s\S]*"rank"[\s\S]*\}/);
+      if (objMatch) {
+        try {
+          parsed = [JSON.parse(objMatch[0])];
+        } catch {
+          throw new Error('AI response did not contain valid JSON. Please try again.');
+        }
+      } else {
+        throw new Error('AI response did not contain valid JSON. Please try again.');
+      }
     }
   }
 
